@@ -337,6 +337,7 @@ shinyServer(function(input, output, session) {
   dataset <- raids
   
   output$timeSel <- renderUI({
+    #Change the date selection input according to the user choice
     if(input$time == "Day"){
       return(dateInput('date',label = 'Date input:', min = head(raids$date, n=1), max = tail(raids$date, n=1), startview = "month",value = head(raids$date, n=1)))
     }
@@ -361,6 +362,7 @@ shinyServer(function(input, output, session) {
   
   
   output$slider <- renderUI({
+    #Change the slider acording to Input
     if(input$time == "Day"){
       
       return(sliderInput("hours", 
@@ -387,35 +389,51 @@ shinyServer(function(input, output, session) {
   
   filteredData <- reactive({
     
+    #Return data according to user choice
+    
     if(input$time == "Day"){
+      
       hour <- format(input$hours, "%H:%M")
       t1 <- raids[raids$date == input$date & hour >= raids$hour_start & hour <= raids$hour_end,]
       
       if(nrow(t1) > 0){
+        
         temp <- t1[!duplicated(t1[,'loc']),]
         temp$total <-aggregate(t1$player_nmr, by=list(Category=t1$loc), FUN=sum)[2]
         temp$nmr_raids <- data.frame(table(t1$loc))[2]
         return(temp)
+        
       }else{
+        
         return(t1)
+        
       }
     }else if(input$time == "Days(Range)"){
       
       t1 <- raids[raids$date == input$range,]
       
       if(nrow(t1) > 0){
+        
         temp <- t1[!duplicated(t1[,'loc']),]
         temp$total <-aggregate(t1$player_nmr, by=list(Category=t1$loc), FUN=sum)[2]
         temp$nmr_raids <- data.frame(table(t1$loc))[2]
         return(temp)
+        
       }else{
+        
         return(t1)
+        
       }
     }else if(input$time == "Months(Range)"){
+      
       if(is.null(input$rangem)){
+        
         d1 <- paste(c("2018","01","01"),collapse = "-")
+        
       }else{
+        
         d1 <- paste(c("2018",toString(input$rangem),"01"),collapse = "-")
+        
       }
       
       a <- as.POSIXlt(d1)
@@ -424,9 +442,11 @@ shinyServer(function(input, output, session) {
       t1 <- raids[raids$date <= a & raids$date >= d1,]
       
       if(nrow(t1) > 0){
+        
         temp <- t1[!duplicated(t1[,'loc']),]
         temp$total <- aggregate(t1$player_nmr, by=list(Category=t1$loc), FUN=sum)[2]
         temp$nmr_raids <- data.frame(table(t1$loc))[2]
+        
         return(temp)
       }else{
         return(t1)
@@ -436,7 +456,7 @@ shinyServer(function(input, output, session) {
   
   
   output$mdynamic <- renderLeaflet({
-    
+    #Render the map and markers
     leaflet(data = raids[raids$date == dates[1],],options = leafletOptions(zoomControl = FALSE)) %>%
       addTiles() %>%
       setView(
@@ -457,6 +477,7 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
+    #look for changes in inputs
     dts <- filteredData()
     if(input$group){
       leafletProxy("mdynamic", data = dts) %>%
@@ -480,6 +501,9 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
+    
+    #Look out for clicking on the markers
+    
     leafletProxy("mdynamic") %>% clearPopups()
     event <- input$mdynamic_marker_click
     if (is.null(event))
@@ -493,8 +517,13 @@ shinyServer(function(input, output, session) {
   })
   
   showRaidPopup <- function(raidid, lat, lng) {
+    
+    #Funtion to create the popups on top of the markers
+    
     data <- filteredData()
+    
     selectedRaid <- data[data$X == raidid,]
+    
     tg1 <- tagList(
       tags$strong(HTML(toupper(selectedRaid$location)
       )), tags$br(),sprintf("Number of Raids: %s", selectedRaid$nmr_raids),tags$br(),sprintf("Player Participation: %s", selectedRaid$total)
@@ -507,12 +536,17 @@ shinyServer(function(input, output, session) {
   #Statistics(Raids Locations)
   
   output$text <- renderUI({
+    
     if (input$t2 == 'Per Hour'){
+      
       return(tagList(tags$h4("As we look at the frequency of raids per time of day we can easily tell",tags$br(),tags$h4("that the peak hours for raiding are between 16:00 and 18:00!"))))
+    
     }else if (input$t2 == 'Per Day'){
+      
       return(tagList(tags$h4("Looking at the distribution of the raid occurrences per weekday,",tags$br(),tags$h4("we surprisingly found a constant frequency of raids!"))))
       
     }else if(input$t2 == 'Per Month'){
+      
       return(tagList(tags$h4("The distribution of the raids per month tells us that the period at the",tags$br(),tags$h4(" beggining of the fall semester is when more people gather for raiding!"))))
     }
   })
@@ -531,24 +565,27 @@ shinyServer(function(input, output, session) {
   })
   
   output$lineplot <- renderPlotly({
+    
     dt <- getData()
+    
     if(input$t2 == 'Per Hour'){
-      #plot(x = dt$X1, y = dt$X2, type= 'ol',ylab="Raid Frequency", xlab="Hour")
+      
       plot_ly(y = perhour$X2,x = perhour$X1,type="bar",marker = list(color= "#474747")) %>% layout(margin = list(r = 60),xaxis = list(title = "Hour",tickangle=45),yaxis = list(title = "Raid Frequency"),hovermode= 'compare', plot_bgcolor='rgba(255, 255, 255,0.1)') %>% 
         layout(paper_bgcolor='rgba(255, 255, 255,0.1)') %>% config(displayModeBar = FALSE)
+      
     }else if(input$t2 == 'Per Day'){
-      #plot(perday$X2, xaxt = "n", type = "ol",ylab="Raid Frequency",xlab="WeekDay")
-      #axis(1, perday$X1, perday$X1,cex.axis = 1)
+
       plot_ly(x= perday$X1,y=perday$X2,type="bar",marker = list(color= "#474747")) %>% layout(xaxis = list(title = "Weekday"),yaxis = list(title = "Raid Frequency"),hovermode= 'compare',plot_bgcolor='rgba(255, 255, 255,0.1)') %>% 
         layout(paper_bgcolor='rgba(255, 255, 255,0.1)') %>% config(displayModeBar = FALSE)
+      
     }else if(input$t2 == 'Per Month'){
-      #plot(permonth$X2, type="ol",xlab ="Month",ylab="Raid Frequency")
+      
       plot_ly(x = permonth$X1, y = permonth$X2, type="bar",marker = list(color= "#474747")) %>% layout(xaxis = list(title = "Month"),yaxis = list(title = "Raid Frequency"),hovermode= 'compare',plot_bgcolor='rgba(255, 255, 255,0.1)') %>% 
         layout(paper_bgcolor='rgba(255, 255, 255,0.1)') %>% config(displayModeBar = FALSE)
     }
   })
   
-  #Players Info
+  #Players Info Table
   df<-players_info
   
   mydata <- reactive({
