@@ -113,7 +113,7 @@ shinyUI(dashboardPage(
               leafletOutput('search_map',height=800),
               absolutePanel(id = "search_settings", class = "panel panel-default", fixed = TRUE,
                             draggable = FALSE, top = 60, left = "auto", right = 20, bottom = "auto",
-                            width = 330, height = "auto",
+                            width = 330, height = "auto",p("Hey there! Want to see what gyms are in your area and how far you need to get to conquer them? Just write where you are and how much you're willing to walk and well show you!"),br(),
                             textInput("place_search", "", "", placeholder = 'Insert a location'),
                             sliderInput("search_radius", h6("Choose a search radius(meters):"),
                                         min = 250, max = 2500, value = 250, step = 250
